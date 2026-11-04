@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="no-referrer" />
+  <title>2026 廈門五日山海漫遊</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg-main:#f4f5f7; --bg-card:#ffffff; --text-primary:#181a1f; --text-secondary:#5a6270; --text-muted:#8c95a4; --border-color:#e4e7ec; --accent-d1:#d97706; --accent-d2:#2563eb; --accent-d3:#059669; --accent-d4:#7c3aed; --accent-d5:#dc2626; --shadow-sm:0 2px 8px rgba(15,23,42,0.05); --shadow-md:0 8px 24px rgba(15,23,42,0.08); --radius-lg:16px; --radius-md:12px; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg-main); color:var(--text-primary); line-height:1.6; -webkit-font-smoothing:antialiased; }
+    .app-header { background:linear-gradient(135deg,#111827 0%,#1e293b 100%); color:#fff; padding:16px 24px 14px; position:sticky; top:0; z-index:1000; box-shadow:0 4px 20px rgba(0,0,0,0.18); transition:padding 0.25s ease; }
+    .app-header.collapsed { padding:10px 16px; }
+    .header-bar-compact { display:flex; justify-content:space-between; align-items:center; max-width:1100px; margin:0 auto; gap:8px; }
+    .compact-title { font-size:15px; font-weight:800; color:#f8fafc; display:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .app-header.collapsed .compact-title { display:block; }
+    .header-toggle-btn { margin-left:auto; background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.25); color:#fff; padding:5px 12px; border-radius:999px; font-size:12.5px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+    .header-collapsible-content { max-width:1100px; margin:8px auto 0; overflow:hidden; transition:max-height 0.3s ease,opacity 0.25s ease,margin 0.25s ease; max-height:500px; opacity:1; }
+    .app-header.collapsed .header-collapsible-content { max-height:0; opacity:0; margin-top:0; pointer-events:none; }
+    .header-top { display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:14px; margin-bottom:14px; }
+    .title-group h1 { font-size:22px; font-weight:800; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .title-group p { font-size:13px; color:#94a3b8; margin-top:4px; }
+    .header-stats { display:flex; gap:10px; flex-wrap:wrap; }
+    .stat-pill { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); padding:5px 12px; border-radius:10px; font-size:12px; color:#e2e8f0; }
+    .date-tabs { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+    .date-tabs::-webkit-scrollbar { display:none; }
+    .date-tab { background:rgba(255,255,255,0.08); color:#cbd5e1; border:1px solid rgba(255,255,255,0.12); padding:7px 18px; border-radius:999px; font-size:13.5px; font-weight:700; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:7px; transition:all 0.2s; }
+    .date-tab.active { background:#fff; color:#0f172a; border-color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+    .dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+    .main-container { max-width:1100px; margin:0 auto; padding:22px 18px 80px; }
+    .itinerary-feed { display:flex; flex-direction:column; gap:26px; }
+    .day-section { background:var(--bg-card); border-radius:var(--radius-lg); border:1px solid var(--border-color); box-shadow:var(--shadow-sm); overflow:hidden; }
+    .day-header { padding:16px 22px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; background:#fafbfc; }
+    .day-title-wrap { display:flex; align-items:center; gap:12px; }
+    .day-badge { padding:5px 12px; border-radius:10px; color:#fff; font-weight:800; font-size:13.5px; white-space:nowrap; }
+    .day-title-text h2 { font-size:18px; font-weight:800; }
+    .day-title-text p { font-size:12.5px; color:var(--text-secondary); margin-top:2px; }
+    .day-map-btn { background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; padding:7px 13px; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px; }
+    .cards-container { padding:20px; display:flex; flex-direction:column; gap:16px; }
+    .place-card { display:grid; grid-template-columns:240px 1fr; border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; background:#fff; transition:transform 0.2s,box-shadow 0.2s; cursor:pointer; }
+    .place-card:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+    .place-card.highlighted { border:2px solid #2563eb; box-shadow:0 0 0 4px rgba(37,99,235,0.12); }
+    .card-media { position:relative; height:100%; min-height:190px; background:#1e293b; overflow:hidden; }
+    .card-media img { width:100%; height:100%; object-fit:cover; display:block; transition:transform 0.35s ease; }
+    .place-card:hover .card-media img { transform:scale(1.04); }
+    .time-tag { position:absolute; top:10px; left:10px; background:rgba(15,23,42,0.86); color:#fff; padding:3px 9px; border-radius:6px; font-size:12px; font-weight:700; z-index:2; }
+    .step-number { position:absolute; bottom:10px; left:10px; width:28px; height:28px; border-radius:50%; color:#fff; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.3); z-index:2; }
+    .card-body { padding:16px 20px; display:flex; flex-direction:column; justify-content:space-between; gap:10px; }
+    .place-title-group h3 { font-size:17.5px; font-weight:800; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .place-meta { display:flex; align-items:center; gap:8px; margin-top:4px; font-size:12px; color:var(--text-secondary); flex-wrap:wrap; }
+    .rating-stars { color:#f59e0b; font-weight:700; }
+    .category-pill { background:#f1f5f9; color:#475569; padding:2px 8px; border-radius:4px; font-weight:600; }
+    .new-tag { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:2px 8px; border-radius:4px; font-weight:700; }
+    .place-desc { font-size:13.5px; color:#334155; }
+    .tips-list { list-style:none; display:flex; flex-direction:column; gap:5px; background:#f8fafc; padding:10px 14px; border-radius:8px; border-left:3px solid #94a3b8; }
+    .tips-list li { font-size:12.5px; color:#475569; }
+    .tips-list li strong { color:#0f172a; }
+    .card-actions { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding-top:8px; border-top:1px dashed var(--border-color); }
+    .address-text { font-size:12px; color:var(--text-muted); }
+    .action-btns { display:flex; gap:6px; flex-wrap:wrap; }
+    .btn-sm { padding:5px 11px; border-radius:6px; font-size:12px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:4px; cursor:pointer; border:1px solid var(--border-color); background:#fff; color:#334155; }
+    .btn-locate { background:#2563eb; border-color:#2563eb; color:#fff; }
+    .floating-map-btn { position:fixed; bottom:20px; right:20px; z-index:990; background:#0f172a; color:#fff; border:1px solid rgba(255,255,255,0.2); padding:11px 18px; border-radius:999px; font-size:13.5px; font-weight:800; box-shadow:0 8px 24px rgba(15,23,42,0.35); cursor:pointer; display:flex; align-items:center; gap:8px; }
+    /* Modal & Swipe Switcher */
+    .map-modal-backdrop { position:fixed; inset:0; background:rgba(15,23,42,0.75); backdrop-filter:blur(4px); z-index:2000; display:none; align-items:center; justify-content:center; padding:12px; }
+    .map-modal-backdrop.open { display:flex; }
+    .map-modal-dialog { width:100%; max-width:960px; height:88vh; max-height:800px; background:#fff; border-radius:16px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 20px 50px rgba(0,0,0,0.45); }
+    .map-modal-header { padding:12px 16px; background:#0f172a; color:#fff; display:flex; justify-content:space-between; align-items:center; gap:10px; touch-action:pan-y; }
+    .map-modal-title { font-size:14px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .map-modal-controls { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+    .map-reset-btn { background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.25); color:#fff; padding:5px 10px; border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; }
+    .map-close-btn { background:#ef4444; border:none; color:#fff; padding:5px 12px; border-radius:7px; font-size:12.5px; font-weight:800; cursor:pointer; }
+    .map-canvas-wrap { position:relative; flex:1; width:100%; overflow:hidden; display:flex; }
+    #map { flex:1; width:100%; height:100%; z-index:1; }
+    .map-side-arrow { position:absolute; top:50%; transform:translateY(-50%); z-index:500; width:40px; height:40px; border-radius:50%; background:rgba(15,23,42,0.82); color:#fff; border:2px solid rgba(255,255,255,0.7); font-size:18px; font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,0.3); }
+    .map-side-arrow.left { left:12px; }
+    .map-side-arrow.right { right:12px; }
+    .map-swipe-bar { background:#0f172a; color:#fff; padding:12px 16px; border-top:1px solid rgba(255,255,255,0.12); user-select:none; touch-action:pan-y; }
+    .swipe-hint { font-size:11px; color:#94a3b8; text-align:center; margin-bottom:8px; }
+    .swipe-card-inner { display:grid; grid-template-columns:76px 1fr auto; gap:12px; align-items:center; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); border-radius:12px; padding:10px 12px; transition:transform 0.2s ease; }
+    .swipe-thumb { width:76px; height:60px; border-radius:8px; object-fit:cover; border:1px solid rgba(255,255,255,0.2); }
+    .swipe-info { overflow:hidden; }
+    .swipe-step-badge { font-size:11px; font-weight:800; color:#38bdf8; margin-bottom:2px; }
+    .swipe-spot-name { font-size:15px; font-weight:800; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .swipe-spot-sub { font-size:12px; color:#cbd5e1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+    .swipe-nav-btns { display:flex; gap:6px; align-items:center; }
+    .swipe-btn { background:#2563eb; color:#fff; border:none; padding:8px 12px; border-radius:8px; font-size:12.5px; font-weight:800; cursor:pointer; white-space:nowrap; }
+    .swipe-btn.prev { background:#334155; }
+    .custom-pin { width:30px; height:30px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); display:flex; align-items:center; justify-content:center; border:2px solid #fff; box-shadow:0 3px 8px rgba(0,0,0,0.35); }
+    .custom-pin span { transform:rotate(45deg); color:#fff; font-weight:800; font-size:12px; }
+    .popup-box h4 { font-size:14px; font-weight:800; margin-bottom:4px; color:#0f172a; }
+    .popup-box p { font-size:12px; color:#475569; margin:0 0 8px; }
+    .popup-links { display:flex; gap:6px; }
+    .popup-links a { font-size:11.5px; padding:4px 8px; border-radius:4px; background:#eff6ff; color:#1d4ed8; text-decoration:none; font-weight:600; }
+    @media (max-width:768px) {
+      .app-header { padding:12px 14px 10px; }
+      .title-group h1 { font-size:18px; }
+      .main-container { padding:14px 12px 80px; }
+      .place-card { grid-template-columns:1fr; }
+      .card-media { height:185px; }
+      .cards-container { padding:14px; }
+      .map-modal-backdrop { padding:6px; }
+      .map-modal-dialog { height:92vh; }
+      .swipe-card-inner { grid-template-columns:64px 1fr; }
+      .swipe-nav-btns { grid-column:1 / -1; justify-content:space-between; width:100%; padding-top:4px; }
+      .swipe-btn { flex:1; text-align:center; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="app-header" id="appHeader">
+    <div class="header-bar-compact">
+      <div class="compact-title">🏝️ 2026 廈門五日山海漫遊（11/18 – 11/22）</div>
+      <button class="header-toggle-btn" id="headerToggleBtn" onclick="toggleHeader()">▲ 收合頂部欄</button>
+    </div>
+    <div class="header-collapsible-content" id="headerContent">
+      <div class="header-top">
+        <div class="title-group">
+          <h1>2026 廈門五日山海漫遊</h1>
+          <p>11/18 (三) – 11/22 (日) ｜ 下榻：麓閣・伴山禪舍（思明區軟件園二期店）</p>
+        </div>
+        <div class="header-stats">
+          <div class="stat-pill">🚢 去程：11/18 抵達五通碼頭</div>
+          <div class="stat-pill">✈️ 回程：11/22 11:30搭船 ➔ 13:30金門飛台中</div>
+        </div>
+      </div>
+      <nav class="date-tabs" id="dateTabs">
+        <button class="date-tab active" onclick="filterDay('all', this)"><span>ALL</span></button>
+        <button class="date-tab" onclick="filterDay('d1', this)"><span class="dot" style="background:var(--accent-d1)"></span><span>DAY 1</span></button>
+        <button class="date-tab" onclick="filterDay('d2', this)"><span class="dot" style="background:var(--accent-d2)"></span><span>DAY 2</span></button>
+        <button class="date-tab" onclick="filterDay('d3', this)"><span class="dot" style="background:var(--accent-d3)"></span><span>DAY 3</span></button>
+        <button class="date-tab" onclick="filterDay('d4', this)"><span class="dot" style="background:var(--accent-d4)"></span><span>DAY 4</span></button>
+        <button class="date-tab" onclick="filterDay('d5', this)"><span class="dot" style="background:var(--accent-d5)"></span><span>DAY 5</span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <div class="itinerary-feed" id="itineraryFeed"></div>
+  </main>
+
+  <button class="floating-map-btn" onclick="openFullMapModal()">🗺️ 開啟全島路線地圖</button>
+
+  <div class="map-modal-backdrop" id="mapModalBackdrop" onclick="closeMapModalOnBackdrop(event)">
+    <div class="map-modal-dialog" onclick="event.stopPropagation()">
+      <div class="map-modal-header" id="mapModalHeader">
+        <div class="map-modal-title" id="mapModalTitle">📍 廈門行程動態路線圖</div>
+        <div class="map-modal-controls">
+          <button class="map-reset-btn" onclick="resetMapView()">顯示全島</button>
+          <button class="map-close-btn" onclick="closeMapModal()">✕ 關閉</button>
+        </div>
+      </div>
+      <div class="map-canvas-wrap">
+        <button class="map-side-arrow left" onclick="stepSpot(-1)" title="上一站">❮</button>
+        <div id="map"></div>
+        <button class="map-side-arrow right" onclick="stepSpot(1)" title="下一站">❯</button>
+      </div>
+      <div class="map-swipe-bar" id="mapSwipeBar">
+        <div class="swipe-hint">👆 手機可在此區「左滑／右滑」或點擊按鈕切換上、下一站</div>
+        <div class="swipe-card-inner" id="swipeCardInner">
+          <img class="swipe-thumb" id="swipeThumb" src="" alt="" referrerpolicy="no-referrer" />
+          <div class="swipe-info">
+            <div class="swipe-step-badge" id="swipeBadge"></div>
+            <div class="swipe-spot-name" id="swipeName"></div>
+            <div class="swipe-spot-sub" id="swipeSub"></div>
+          </div>
+          <div class="swipe-nav-btns">
+            <button class="swipe-btn prev" onclick="stepSpot(-1)">◀ 上一站</button>
+            <button class="swipe-btn next" onclick="stepSpot(1)">下一站 ▶</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    try {
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith('xm_b64_')) localStorage.removeItem(k);
+      });
+    } catch (e) {}
+
+    const itineraryData = [
+      {
+        dayId: 'd1', date: 'DAY 1（11/18）', title: '抵達廈門・九九木配鏡 ＋ 朱富貴海鮮火鍋 ＆ 八市中山路',
+        subtitle: '五通碼頭下船 ➔ 瑞幸咖啡 ➔ 飯店放行李 ➔ 九九木眼鏡（五緣灣天虹B1） ➔ 【新增】朱富貴火鍋（淺嚐） ➔ 八市 ＆ 中山路吃小東西',
+        color: '#d97706',
+        spots: [
+          {
+            id: 'd1-1', step: 1, time: '15:30 – 16:00', name: '瑞幸咖啡（砂之船奧特萊斯店）',
+            category: '咖啡小憩', rating: '4.8', isNew: false, lat: 24.5328, lng: 118.1925,
+            address: '福建省廈門市湖里區環島東路2488號砂之船奧特萊斯（五通客運碼頭對面）',
+            img: 'https://image-cdn.learnin.tw/bnextmedia/image/album/2020-06/img-1593431172-66404.jpg?w=900&output=webp',
+            desc: '從五通客運碼頭下船出關後，直接過馬路走到對面砂之船奧特萊斯來杯冰美式或生椰拿鐵提神，開啟廈門行程。',
+            tips: ['<strong>點餐方式：</strong>建議直接用微信「瑞幸咖啡」小程式線上下單取餐，免排隊且常有折扣券。', '<strong>動線銜接：</strong>喝完咖啡直接在砂之船門口叫網約車前往軟件園二期酒店（車程約 15 分鐘）。']
+          },
+          {
+            id: 'd1-2', step: 2, time: '16:15 – 16:40', name: '麓閣・伴山禪舍（思明區軟件園二期店）',
+            category: '酒店入住・放行李', rating: '4.9', isNew: false, lat: 24.486846, lng: 118.181160,
+            address: '福建省廈門市思明區虎仔山路190號（軟件園二期旁）',
+            img: 'https://ak-d.tripcdn.com/images/1mc7312000tc3nspvBDBC_W_480_360_R5_Q70.jpg',
+            desc: '禪意風格設計酒店，環境清幽且距離五通碼頭與五緣灣商圈都不遠。先辦理入住並把大件行李放妥，輕裝出門。',
+            tips: ['<strong>位置優勢：</strong>前往下一站「五緣灣天虹購物中心（九九木眼鏡）」車程僅約 10–12 分鐘；最後一天去五通碼頭也只需約 15 分鐘。']
+          },
+          {
+            id: 'd1-3', step: 3, time: '16:50 – 17:45', name: '九九木眼鏡（五緣灣天虹購物中心店）',
+            category: '驗光配鏡・光學眼鏡', rating: '4.8', isNew: false, lat: 24.509873, lng: 118.160382,
+            address: '福建省廈門市湖里區金湖路516號（五緣灣天虹購物中心 B1地下一樓）',
+            customGmapUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('福建省廈門市湖里區金湖路516號 五緣灣天虹購物中心 九九木眼鏡'),
+            customAmapUrl: 'https://uri.amap.com/marker?position=118.160382,24.509873&name=' + encodeURIComponent('九九木眼鏡(五緣灣天虹購物中心B1)'),
+            img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStRpd08BRWUjkjB1zMqsNdKfBm9d4NEF3hD-HkRpPodE0pj7IdK9gveFFu&s=10',
+            desc: '放完行李後搭車前往湖里區金湖路 516 號「五緣灣天虹購物中心」B1 地下一樓的九九木眼鏡驗光配鏡，配完直接去吃朱富貴火鍋。',
+            tips: ['<strong>商場位置：</strong>位於金湖路與五緣灣道交匯處（地鐵 2/3 號線五緣灣站旁），進入天虹購物中心搭手扶梯至 B1 即達。', '<strong>取件秘訣：</strong>若配製特殊鏡片無法當場取件，可請店家配好後用順豐快遞寄回「麓閣・伴山禪舍」櫃檯代收。']
+          },
+          {
+            id: 'd1-4', step: 4, time: '18:00 – 19:15', name: '朱富貴海鮮火鍋（湖里國貿銀泰店／火車站禹悅匯店）',
+            category: '一人一鍋・鮮活水產自選', rating: '4.8', isNew: true, lat: 24.506943, lng: 118.180080,
+            address: '福建省廈門市湖里區仙岳路4688號銀泰百貨國貿中心店B1層（或順路至思明區廈禾路禹悅匯A館5樓）',
+            customGmapUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('廈門 朱富貴火鍋'),
+            customAmapUrl: 'https://uri.amap.com/marker?position=118.180080,24.506943&name=' + encodeURIComponent('朱富貴火鍋(湖里銀泰店)'),
+            img: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
+            desc: '廈門超人氣「一人一鍋」現撈海鮮市集火鍋，想吃什麼自己拿盤子夾。配完眼鏡先來這裡簡單吃一波鮮活蝦蟹解饞！',
+            tips: ['<strong>控量重點（極重要）：</strong>這站主打「簡單吃、不要吃太飽」，挑幾盤招牌活蝦、貝類與鮮切牛肉嚐鮮即可，千萬別拿太撐的手工麵，留胃給稍後的八市與中山路小吃！', '<strong>分店選擇：</strong>離五緣灣天虹最近的是「湖里國貿銀泰店（車程約 5 分鐘）」；若想往老城區推進也可去「火車站禹悅匯店（A館5樓）」。']
+          },
+          {
+            id: 'd1-5', step: 5, time: '19:35 – 20:45', name: '八市（廈門第八海鮮市場）',
+            category: '傳統市集・在地小東西', rating: '4.6', isNew: false, lat: 24.4593, lng: 118.0772,
+            address: '福建省廈門市思明區開禾路與友誼路交叉口一帶',
+            img: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/30/06/ef/b8/caption.jpg?w=1100&h=1100&s=1',
+            desc: '吃完朱富貴後搭車來到八市散步消食，以「邊逛邊吃點小東西」為主，感受廈門老城區最道地的夜間煙火氣。',
+            tips: ['<strong>輕食推薦：</strong>買份阿杰五香、朱記手撕雞、鐘麗君滿煎糕或沙茶烤肉串分著嚐味道即可。']
+          },
+          {
+            id: 'd1-6', step: 6, time: '20:45 – 22:00', name: '中山路步行街',
+            category: '歷史街區・南洋騎樓散步', rating: '4.7', isNew: false, lat: 24.4542, lng: 118.0811,
+            address: '福建省廈門市思明區中山路（緊鄰八市南側）',
+            img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQzA_oIio5KQiuru0xazomkvNq8MuZliIkCZ8lvr1acFJcUQ-1JkcMatiHM&s=10',
+            desc: '從八市往南散步無縫銜接中山路步行街，邊看南洋騎樓夜景邊吃點花生湯、燒仙草等街頭小點，輕鬆收尾第一天。',
+            tips: ['<strong>拍照看點：</strong>夜間騎樓廊柱光影與街區西側遙望海口的視野最出片。', '<strong>回程交通：</strong>逛完後避開步行街管制路段，走到鷺江道或鎮海路外圍叫車回酒店最順暢。']
+          }
+        ]
+      },
+      {
+        dayId: 'd2', date: 'DAY 2（11/19）', title: '鼓浪嶼漫遊（15:00撤） ➔ 回飯店休息 ➔ Sea U 海雲夕陽雙子塔',
+        subtitle: '鼓浪嶼（15:00撤離） ➔ 【新增】回飯店休息充電 ➔ 【新增】夕陽前抵 Sea U 海雲咖啡廳吃飯拍雙子塔 ➔ 白城沙灘酒吧',
+        color: '#2563eb',
+        spots: [
+          {
+            id: 'd2-1', step: 1, time: '09:30 – 15:00', name: '鼓浪嶼（萬國建築博覽群・15:00撤離）',
+            category: '世界文化遺產・離島漫步', rating: '4.8', isNew: false, lat: 24.4446, lng: 118.0673,
+            address: '福建省廈門市思明區鼓浪嶼（由東渡郵輪中心廈鼓碼頭搭船登島）',
+            img: 'https://img.ezfly.com/ims/I000/076/068.jpg',
+            desc: '早上登島漫步百年洋樓與紅磚別墅，挑選精華路段拍照，下午 3 點左右直接搭船撤離返回本島，不硬逛耗體力。',
+            tips: ['<strong>撤離時間關鍵：</strong>15:00 左右從三丘田碼頭搭船回本島，避開傍晚下島排隊高峰。', '<strong>體力分配：</strong>島上全為上下坡步道，見好就收先回飯店休息，傍晚看夕陽更有精神。']
+          },
+          {
+            id: 'd2-2', step: 2, time: '15:30 – 16:20', name: '麓閣・伴山禪舍（回飯店休息充電）',
+            category: '中場休息・換裝小憩', rating: '4.9', isNew: true, lat: 24.486846, lng: 118.181160,
+            address: '福建省廈門市思明區虎仔山路190號（軟件園二期旁）',
+            img: 'https://ak-d.tripcdn.com/images/1mc7312000tc3nspvBDBC_W_480_360_R5_Q70.jpg',
+            desc: '下船後先搭車回飯店吹冷氣泡茶、沖個澡或換套帥氣穿搭，休息到 16:20 左右再出發前往白城沙灘追夕陽。',
+            tips: ['<strong>出發時間提醒：</strong>11/19 廈門日落時間約為 17:16，建議最晚 16:20 從飯店叫車出發（走環島幹道約 20 分鐘直達環島南路）。']
+          },
+          {
+            id: 'd2-3', step: 3, time: '16:45 – 19:15', name: '拍夕陽＆雙子塔吃飯',
+            category: '絕美落日海景・同框拍雙子塔', rating: '4.8', isNew: true, lat: 24.4302, lng: 118.1035,
+            address: '福建省廈門市思明區環島南路256-2號（白城沙灘與胡里山炮台交界海邊）',
+            customGmapUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('廈門市思明區環島南路256-2號 Sea U海雲'),
+            customAmapUrl: 'https://uri.amap.com/marker?position=118.1035,24.4302&name=' + encodeURIComponent('Sea U海雲餐酒吧(環島南路256-2號)'),
+            img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRK0MfQQsxsyYDe-P4xDIEom8PMqwE-eWAKUIgS55ChZQ&s=10',
+            desc: '卡在 11/19 夕陽時刻前抵達！餐廳正處於白城沙灘弧形海岸線制高視角，二樓露台與海景窗位在現場就能直接將「世茂雙子塔、橘紅落日、白城海灣」一次拍齊，邊看夕陽轉藍調夜景邊吃晚餐。',
+            tips: ['<strong>黃金拍攝時段：</strong>16:45–17:20 拍金黃落日與海面反光；17:25–18:00 雙子塔亮燈後拍藍調時刻（Blue Hour）夜景，一站搞定雙子塔大片！', '<strong>推薦餐點：</strong>香草烤春雞、西式排餐、斑斕超椰與蔚藍海岸特調，用餐完直接下樓就是白城沙灘。']
+          },
+          {
+            id: 'd2-4', step: 4, time: '19:15 – 21:30', name: '白城沙灘酒吧（廈大白城海岸線漫步）',
+            category: '海景微醺・夜間沙灘', rating: '4.6', isNew: false, lat: 24.4312, lng: 118.1008,
+            address: '福建省廈門市思明區環島南路（Sea U 海雲餐廳走出即達白城沙灘木棧道）',
+            img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThNWdYtRnuZnrbQh8htT2JYh1ei25RlLnAKlZSfFh23dCB8KI3GMoZ9ew&s=10',
+            desc: '在 Sea U 吃完飯拍完雙子塔後，下樓直接踏上白城沙灘木棧道，聽著駐唱音樂與海浪聲散步小酌，完全免奔波。',
+            tips: ['<strong>穿搭提醒：</strong>11 月下旬夜晚海邊風大微涼，建議攜帶防風皮衣或工裝外套。']
+          }
+        ]
+      },
+      {
+        dayId: 'd3', date: 'DAY 3（11/20）', title: '鯨宴海鮮自助 ＋ 嶼見閩南（縮短） ➔ 沙坡尾網紅街拍 ＆ 八市中山路',
+        subtitle: '鯨宴海鮮自助 ➔ 嶼見閩南（縮短為2小時精華） ➔ 【新增網紅點】沙坡尾藝術西區 ➔ 【補逛】八市／中山路步行街',
+        color: '#059669',
+        spots: [
+          {
+            id: 'd3-1', step: 1, time: '11:30 – 13:30', name: '鯨宴海鮮姿造自助（廈門萬象城店）',
+            category: '頂級海鮮百匯・高蛋白饗宴', rating: '4.8', isNew: false, lat: 24.4705, lng: 118.1102,
+            address: '福建省廈門市思明區湖濱東路99號廈門萬象城二期 B201',
+            img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvqqU4-dtrDC72q4KDTQokVT2907vFddRwpy9ZdD70cOfZVWpvuRDPBD8&s=10',
+            desc: '廈門高人氣高檔海鮮自助，主打活體海鮮現撈現煮、藍龍蝦、紐西蘭鰲蝦、帝王蟹腳、鐵板鵝肝與烤榴槤無限暢享。',
+            tips: ['<strong>時段建議：</strong>11:30 開餐入場，活蝦蟹補貨最快，中午吃完高蛋白大餐，下午走走拍拍剛好消化。']
+          },
+          {
+            id: 'd3-2', step: 2, time: '14:00 – 16:00', name: '遇見閩南（嶼見閩南·時光幻境・精華快閃）',
+            category: '沉浸式閩南古厝・時間縮短版', rating: '4.7', isNew: false, lat: 24.4848, lng: 118.0735,
+            address: '福建省廈門市湖里區東港北路15、17-19號（近東渡郵輪中心碼頭）',
+            img: 'https://ak-d.tripcdn.com/images/0355112000o4ti8s4A47B_C_1000_1000_Q50.jpg_.webp?_fr=wc',
+            desc: '停留時間精簡為 2 小時！鎖定最具代表性的燕尾脊紅磚古厝群與主舞台演藝拍照打卡，拍完即撤，留時間給下午的網紅街區與夜市。',
+            tips: ['<strong>入園提醒：</strong>務必攜帶台胞證實名入園，進場先拿節目單挑一場核心大秀看即可，不浪費時間久留。']
+          },
+          {
+            id: 'd3-3', step: 3, time: '16:25 – 18:30', name: '沙坡尾藝術西區 ＆ 避風塢（網紅地標街拍）',
+            category: '潮流網紅聚落・工業文青咖啡', rating: '4.8', isNew: true, lat: 24.4390, lng: 118.0890,
+            address: '福建省廈門市思明區沙坡尾60號（大學路與民族路交匯處）',
+            img: 'https://img.hansphoto.tw/event/2411_kinmen_xiamen/mini-three-link-transportation_240.webp',
+            desc: '取消百貨商場行程，改來廈門最火紅的「沙坡尾藝術西區」！由老漁港避風塢與舊廠房改造而成的工業文青風街區，匯聚獨立咖啡店、美式復古小店與天台打卡點。',
+            tips: ['<strong>必拍機位：</strong>避風塢木棧道可拍「老漁船＋彩色老房＋摩天雙子塔」的新舊衝突感，非常適合 City Boy／硬派工裝穿搭街拍。', '<strong>咖啡推薦：</strong>街區內有多家工業風獨立精品咖啡館，適合點杯冰美式小憩。']
+          },
+          {
+            id: 'd3-4', step: 4, time: '18:45 – 21:30', name: '二訪八市 ＆ 中山路步行街（美食補遺巡禮）',
+            category: '老城夜市・小吃補刀', rating: '4.7', isNew: true, lat: 24.4570, lng: 118.0790,
+            address: '福建省廈門市思明區開禾路八市 ➔ 中山路步行街沿線',
+            img: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/30/06/ef/b8/caption.jpg?w=1100&h=1100&s=1',
+            desc: '從沙坡尾打車過來僅需 8–10 分鐘。把 Day 1 沒吃到的八市海鮮大排檔、沙茶麵、局口街巷弄小吃與中山路伴手禮一次逛透。',
+            tips: ['<strong>進攻重點：</strong>可專攻第一天沒肚子吃的沙茶麵（如烏糖／四里／月華沙茶麵）、大中沙茶麵或局口拌麵。']
+          }
+        ]
+      },
+      {
+        dayId: 'd4', date: 'DAY 4（11/21）', title: '南普陀寺 ➔ 黃都禮宴（中午優先） ➔ 植物園＆索道 ➔ 洗浴按摩放鬆',
+        subtitle: '南普陀寺 ➔ 【新增午宴】黃都禮宴 ➔ 植物園＆鐘鼓索道 ➔ 八市/中山路補吃 ➔ 【新增】洗浴中心按摩放鬆',
+        color: '#7c3aed',
+        spots: [
+          {
+            id: 'd4-1', step: 1, time: '09:00 – 10:50', name: '南普陀寺',
+            category: '千年古剎・閩南名寺', rating: '4.8', isNew: false, lat: 24.4418, lng: 118.0965,
+            address: '福建省廈門市思明區思明南路515號（廈門大學南門旁）',
+            img: 'https://megapx-assets.dcard.tw/images/2ae82697-ae52-4d85-a366-9cd4776f3cd7/640.jpeg',
+            desc: '背依五老峰的千年古剎，早上第一站前往氣溫涼爽且避開旅行團，參拜完正好搭車去吃中午的「黃都・禮宴」。',
+            tips: ['<strong>預約必看：</strong>出發前先在微信小程式搜尋「南普陀寺預約服務平台」免費實名登記早場時段。']
+          },
+          {
+            id: 'd4-2', step: 2, time: '11:20 – 13:45', name: '黃都・禮宴',
+            category: '沉浸式國風劇場・宮廷美饌', rating: '4.9', isNew: true, lat: 24.4762, lng: 118.1725,
+            address: '福建省廈門市思明區蓮前街道前埔路188號-1號',
+            customGmapUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('廈門市思明區蓮前街道前埔路188號 黃都禮宴'),
+            customAmapUrl: 'https://uri.amap.com/marker?position=118.1725,24.4762&name=' + encodeURIComponent('黃都·禮宴(前埔路188號)'),
+            img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTTmcRsrlRWGEBhu--WnBnHiwknZfzVuGoYQv60X2Awq1gna3oR5MvZ89Qa&s=10',
+            desc: '以「一席承千年皇家禮韻」為主題的沉浸式國風劇場餐廳，在亭台樓閣與雕樑畫棟間邊看古風歌舞戲劇演出、邊享用一道道精緻宮廷宴席料理！',
+            tips: ['<strong>午宴時段（中午優先）：</strong>午宴營業時間為 10:00–14:00，務必提前預約午宴席位；建議 11:20 前抵達，可先體驗古風互動雅集或拍照，再準時入席看秀開席。', '<strong>份量提醒：</strong>宮廷禮宴主打精緻擺盤與視覺儀式感，若食量大覺得只有七八分飽，傍晚下山直接去八市／中山路補吃！']
+          },
+          {
+            id: 'd4-3', step: 3, time: '14:15 – 16:30', name: '廈門園林植物園（雨林世界 ＆ 多肉植物區）',
+            category: '山林秘境・硬派仙人掌大片', rating: '4.8', isNew: false, lat: 24.4503, lng: 118.0958,
+            address: '福建省廈門市思明區虎園路25號（主出入口：西門）',
+            img: 'https://res.klook.com/image/upload/w_750,h_469,c_fill,q_85/w_80,x_15,y_15,g_south_west,l_Klook_water_br_trans_yhcmh3/activities/dyyglqzx6hxzdec1pj7p.jpg',
+            desc: '吃完黃都禮宴後搭車前往植物園，直攻「多肉植物區」巨型仙人掌荒漠造景與「雨林世界」定時噴霧丁達爾光影。',
+            tips: ['<strong>省力關鍵：</strong>入園直接買「景交車通票」，搭車直上多肉植物區與雨林世界，逛完從「西門」出園無縫接鐘鼓索道。']
+          },
+          {
+            id: 'd4-4', step: 4, time: '16:40 – 17:45', name: '廈門鐘鼓索道',
+            category: '高空纜車・夕陽山海全景', rating: '4.7', isNew: false, lat: 24.4521, lng: 118.0934,
+            address: '福建省廈門市思明區虎園路31號（植物園西門正對面旁）',
+            img: 'https://ak-d.tripcdn.com/images/0354x12000rxo9x2sB6CB_C_1000_1000_Q50.jpg_.webp',
+            desc: '全長超過 1000 公尺的雙人座空中纜車（全程約 40 分鐘），剛好在日落時段從高空 360 度俯瞰植物園山林、老城紅屋頂與遠方海景。',
+            tips: ['<strong>預約必看：</strong>16:30–17:30 夕陽時段最搶手，務必提前在微信公眾號購票預約時段。']
+          },
+          {
+            id: 'd4-5', step: 5, time: '18:00 – 19:45', name: '八市 ／ 中山路步行街（自由亂吃補刀）',
+            category: '在地小吃・高彈性覓食', rating: '4.7', isNew: true, lat: 24.4593, lng: 118.0772,
+            address: '福建省廈門市思明區開禾路八市 ＆ 中山路步行街（距鐘鼓索道車程僅 8 分鐘）',
+            img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQzA_oIio5KQiuru0xazomkvNq8MuZliIkCZ8lvr1acFJcUQ-1JkcMatiHM&s=10',
+            desc: '從鐘鼓索道下山離八市與中山路超近！如果中午黃都禮宴的精緻宮廷菜沒吃飽，直接來這裡開啟「亂吃模式」，生蠔、小管、沙茶烤肉、薑母鴨隨意掃街。',
+            tips: ['<strong>完美銜接：</strong>吃飽喝足後再搭車前往下一站洗浴中心泡湯按摩，完美消化不脹氣。']
+          },
+          {
+            id: 'd4-6', step: 6, time: '20:00 – 23:00', name: '手佳健康水療會所（蓮前明發店／呂厝豪峰店・洗浴按摩放鬆）',
+            category: '泡湯洗浴・全身推拿足浴＋免費自助吧', rating: '4.9', isNew: true, lat: 24.477010, lng: 118.125278,
+            address: '福建省廈門市思明區蓮前西路51號毅宏大廈1-2樓（或湖里區呂嶺路15號呂厝豪峰店）',
+            customGmapUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('廈門 手佳健康會所'),
+            customAmapUrl: 'https://uri.amap.com/marker?position=118.125278,24.477010&name=' + encodeURIComponent('手佳健康會所(蓮前明發店)'),
+            img: 'https://ak-d.tripcdn.com/images/0351512000s7wtgyy7777_C_1000_1000_Q50.jpg_.webp?_fr=wc',
+            desc: '最後一晚回飯店前的終極放鬆！廈門口碑極佳的大型複合式洗浴水療按摩會所，提供熱水大浴池泡湯、蒸汽桑拿、專業中式全身指壓／足浴推拿，還附設 24 小時免費熱食水果自助吧。',
+            tips: ['<strong>動線超順：</strong>「蓮前明發店」與「呂厝豪峰店」正好位在八市／中山路返回軟件園二期飯店的中途幹道上，按完摩搭車回「麓閣・伴山禪舍」僅約 10–12 分鐘，回去直接秒睡！', '<strong>高階替代方案：</strong>若想體驗更高端奢華的湯泉水療，也可選擇「淺深休閒會所（湖濱南路店）」或「水裹·湯泉生活」。']
+          }
+        ]
+      },
+      {
+        dayId: 'd5', date: 'DAY 5（11/22）', title: '小三通返程：五通碼頭搭船 ➔ 金門尚義機場飛台中',
+        subtitle: '09:30 酒店退房出發 ➔ 10:00 五通碼頭開船 ➔ 11:30 五通碼頭開船 ➔ 12:00 抵金門水頭 ➔ 13:30 起飛回台中',
+        color: '#dc2626',
+        spots: [
+          {
+            id: 'd5-1', step: 1, time: '10:15 – 11:30', name: '務必提前到!!! 廈門五通客運碼頭（11:30 船班返金門）',
+            category: '小三通返程・通關登船', rating: '4.7', isNew: false, lat: 24.5335, lng: 118.1942,
+            address: '福建省廈門市湖里區環島東路2500號（距離軟件園二期酒店車程約 15–20 分鐘）',
+            img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7oBFa3qc8SjroTE5TvoIdbpOTgsfU9Z0e2lMVpuJ1Dw&s=10',
+            desc: '前一晚按完摩徹底放鬆後，早上睡飽於 10:00 退房搭車前往五通碼頭。11:30 開船約 12:00 抵達金門水頭碼頭，銜接 13:30 班機飛回台中。',
+            tips: ['<strong>通關時間：</strong>船班開航前 30 分鐘（11:00）停止檢票，建議 10:30 前抵達五通碼頭櫃檯取票通關。', '<strong>金門轉乘關鍵：</strong>12:00 抵達金門水頭碼頭出關後，請直接排隊搭「計程車」直奔尚義機場（車程約 15 分鐘）。']
+          }
+        ]
+      }
+    ];
+
+    const map = L.map('map', { zoomControl: true }).setView([24.485, 118.135], 12);
+    const gaodeLayer = L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', { attribution: '&copy; 高德地圖', subdomains: ['1','2','3','4'], maxZoom: 19 });
+    const googleLayer = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=zh-TW&x={x}&y={y}&z={z}', { attribution: '&copy; Google Maps', subdomains: ['0','1','2','3'], maxZoom: 20 });
+    const osmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 19 });
+    gaodeLayer.addTo(map);
+    L.control.layers({ '🧭 高德地圖（推薦）': gaodeLayer, '🗺️ Google 地圖（繁中）': googleLayer, '🌐 OpenStreetMap': osmLayer }, null, { position: 'topright' }).addTo(map);
+
+    const markersBySpotId = {};
+    const layerGroupsByDay = {};
+    const allBounds = [];
+    let activeSpotIds = [];
+    let currentSpotIdx = 0;
+
+    async function urlToBase64(url, spotId) {
+      if (url.startsWith('data:image/')) return url;
+      const cacheKey = 'xm_img_v3_' + spotId;
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached && cached.startsWith('data:image/')) return cached;
+      } catch (e) {}
+
+      const cleanUrl = url.replace(/\?_fr=wc$/, '');
+      const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&w=750&output=jpg&q=82`;
+      for (const target of [proxyUrl, url]) {
+        try {
+          const res = await fetch(target, { mode: 'cors' });
+          if (!res.ok) continue;
+          const blob = await res.blob();
+          if (!blob.type.startsWith('image/')) continue;
+          const b64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+          if (b64 && b64.startsWith('data:image/')) {
+            try { localStorage.setItem(cacheKey, b64); } catch (e) {}
+            return b64;
+          }
+        } catch (err) {}
+      }
+      return url;
+    }
+
+    async function convertAllImagesSilently() {
+      for (const day of itineraryData) {
+        for (const spot of day.spots) {
+          const b64 = await urlToBase64(spot.img, spot.id);
+          spot.img = b64;
+          if (markersBySpotId[spot.id]) markersBySpotId[spot.id].img = b64;
+          const imgEl = document.getElementById(`img-${spot.id}`);
+          if (imgEl) imgEl.src = b64;
+        }
+      }
+    }
+
+    function toggleHeader() {
+      const header = document.getElementById('appHeader');
+      const btn = document.getElementById('headerToggleBtn');
+      header.classList.toggle('collapsed');
+      btn.innerHTML = header.classList.contains('collapsed') ? '▼ 展開日期選單' : '▲ 收合頂部欄';
+    }
+
+    function openMapModal(titleText) {
+      const modal = document.getElementById('mapModalBackdrop');
+      if (titleText) document.getElementById('mapModalTitle').textContent = titleText;
+      modal.classList.add('open');
+      setTimeout(() => map.invalidateSize(), 60);
+    }
+
+    function closeMapModal() {
+      document.getElementById('mapModalBackdrop').classList.remove('open');
+    }
+
+    function closeMapModalOnBackdrop(e) {
+      if (e.target.id === 'mapModalBackdrop') closeMapModal();
+    }
+
+    function updateSwipeBar(spotId) {
+      const item = markersBySpotId[spotId];
+      if (!item) return;
+      document.getElementById('swipeThumb').src = item.img;
+      document.getElementById('swipeBadge').textContent = `${item.date} · 第 ${currentSpotIdx + 1} / ${activeSpotIds.length} 站 · ${item.time}`;
+      document.getElementById('swipeName').textContent = item.name;
+      document.getElementById('swipeSub').textContent = '📍 ' + item.address;
+      document.getElementById('mapModalTitle').textContent = `📍 ${item.date}｜${item.name} (${currentSpotIdx + 1}/${activeSpotIds.length})`;
+    }
+
+    function stepSpot(delta) {
+      if (!activeSpotIds.length) return;
+      currentSpotIdx = (currentSpotIdx + delta + activeSpotIds.length) % activeSpotIds.length;
+      const nextId = activeSpotIds[currentSpotIdx];
+      const inner = document.getElementById('swipeCardInner');
+      inner.style.transform = `translateX(${delta > 0 ? '-12px' : '12px'})`;
+      setTimeout(() => { inner.style.transform = 'translateX(0)'; }, 160);
+      focusSpot(nextId, activeSpotIds);
+    }
+
+    function initSwipeGestures() {
+      let startX = 0, startY = 0;
+      ['mapSwipeBar', 'mapModalHeader'].forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('touchstart', e => {
+          startX = e.changedTouches[0].screenX;
+          startY = e.changedTouches[0].screenY;
+        }, { passive: true });
+        el.addEventListener('touchend', e => {
+          const dx = e.changedTouches[0].screenX - startX;
+          const dy = e.changedTouches[0].screenY - startY;
+          if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+            if (dx < 0) stepSpot(1);
+            else stepSpot(-1);
+          }
+        }, { passive: true });
+      });
+      document.addEventListener('keydown', e => {
+        if (!document.getElementById('mapModalBackdrop').classList.contains('open')) return;
+        if (e.key === 'Escape') closeMapModal();
+        if (e.key === 'ArrowLeft') stepSpot(-1);
+        if (e.key === 'ArrowRight') stepSpot(1);
+      });
+    }
+
+    function initApp() {
+      const feed = document.getElementById('itineraryFeed');
+      feed.innerHTML = '';
+      itineraryData.forEach(day => {
+        const dayLayer = L.layerGroup().addTo(map);
+        layerGroupsByDay[day.dayId] = dayLayer;
+        const dayLatLngs = [];
+        const section = document.createElement('section');
+        section.className = 'day-section';
+        section.dataset.dayId = day.dayId;
+        let cardsHtml = '';
+
+        day.spots.forEach(spot => {
+          const latLng = [spot.lat, spot.lng];
+          dayLatLngs.push(latLng);
+          allBounds.push(latLng);
+
+          const pinIcon = L.divIcon({
+            className: '',
+            html: `<div class="custom-pin" style="background:${day.color}"><span>${spot.step}</span></div>`,
+            iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -28]
+          });
+
+          const gmapUrl = spot.customGmapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('廈門 ' + spot.name)}`;
+          const amapUrl = spot.customAmapUrl || `https://uri.amap.com/marker?position=${spot.lng},${spot.lat}&name=${encodeURIComponent(spot.name)}`;
+
+          const marker = L.marker(latLng, { icon: pinIcon }).addTo(dayLayer);
+          marker.bindPopup(`
+            <div class="popup-box">
+              <div style="font-size:11px;font-weight:700;color:${day.color};margin-bottom:2px;">${day.date} · ${spot.time}</div>
+              <h4>${spot.name}</h4>
+              <p>${spot.address}</p>
+              <div class="popup-links">
+                <a href="${gmapUrl}" target="_blank" rel="noopener">🗺️ Google Maps</a>
+                <a href="${amapUrl}" target="_blank" rel="noopener">🧭 高德導航</a>
+              </div>
+            </div>
+          `);
+
+          markersBySpotId[spot.id] = { marker, dayId: day.dayId, latLng, name: spot.name, date: day.date, time: spot.time, address: spot.address, img: spot.img };
+          activeSpotIds.push(spot.id);
+
+          const tipsHtml = spot.tips.map(t => `<li>${t}</li>`).join('');
+          const newBadgeHtml = spot.isNew ? `<span class="new-tag">✨ 新調整景點</span>` : '';
+
+          cardsHtml += `
+            <article class="place-card" id="card-${spot.id}" onclick="focusSpot('${spot.id}')">
+              <div class="card-media">
+                <span class="time-tag">${spot.time}</span>
+                <span class="step-number" style="background:${day.color}">${spot.step}</span>
+                <img id="img-${spot.id}" src="${spot.img}" alt="${spot.name}" referrerpolicy="no-referrer" />
+              </div>
+              <div class="card-body">
+                <div>
+                  <div class="place-title-group">
+                    <h3>${spot.name}</h3>
+                    <div class="place-meta">
+                      <span class="rating-stars">★ ${spot.rating}</span>
+                      <span class="category-pill">${spot.category}</span>
+                      ${newBadgeHtml}
+                    </div>
+                  </div>
+                  <p class="place-desc" style="margin-top:8px;">${spot.desc}</p>
+                </div>
+                <ul class="tips-list" style="border-left-color:${day.color}">${tipsHtml}</ul>
+                <div class="card-actions" onclick="event.stopPropagation()">
+                  <span class="address-text">📍 ${spot.address}</span>
+                  <div class="action-btns">
+                    <button class="btn-sm btn-locate" onclick="focusSpot('${spot.id}')">🎯 地圖定位</button>
+                    <a class="btn-sm" href="${gmapUrl}" target="_blank" rel="noopener">Google 地圖</a>
+                    <a class="btn-sm" href="${amapUrl}" target="_blank" rel="noopener">高德導航</a>
+                  </div>
+                </div>
+              </div>
+            </article>
+          `;
+        });
+
+        if (dayLatLngs.length > 1) {
+          L.polyline(dayLatLngs, { color: day.color, weight: 3.5, opacity: 0.75, dashArray: '8, 8' }).addTo(dayLayer);
+        }
+
+        section.innerHTML = `
+          <div class="day-header">
+            <div class="day-title-wrap">
+              <span class="day-badge" style="background:${day.color}">${day.date}</span>
+              <div class="day-title-text"><h2>${day.title}</h2><p>${day.subtitle}</p></div>
+            </div>
+            <button class="day-map-btn" onclick="zoomToDay('${day.dayId}')">🗺️ 當日路線地圖</button>
+          </div>
+          <div class="cards-container">${cardsHtml}</div>
+        `;
+        feed.appendChild(section);
+      });
+      initSwipeGestures();
+      convertAllImagesSilently();
+    }
+
+    function focusSpot(spotId, customList) {
+      activeSpotIds = customList || Object.keys(markersBySpotId);
+      currentSpotIdx = activeSpotIds.indexOf(spotId);
+      if (currentSpotIdx === -1) { activeSpotIds = Object.keys(markersBySpotId); currentSpotIdx = activeSpotIds.indexOf(spotId); }
+
+      document.querySelectorAll('.place-card').forEach(c => c.classList.remove('highlighted'));
+      const cardEl = document.getElementById(`card-${spotId}`);
+      if (cardEl) cardEl.classList.add('highlighted');
+
+      const item = markersBySpotId[spotId];
+      if (item) {
+        openMapModal();
+        updateSwipeBar(spotId);
+        if (!map.hasLayer(layerGroupsByDay[item.dayId])) layerGroupsByDay[item.dayId].addTo(map);
+        setTimeout(() => {
+          map.invalidateSize();
+          map.flyTo(item.latLng, 16, { duration: 0.6 });
+          setTimeout(() => item.marker.openPopup(), 300);
+        }, 100);
+      }
+    }
+
+    function zoomToDay(dayId) {
+      const day = itineraryData.find(d => d.dayId === dayId);
+      if (!day) return;
+      activeSpotIds = day.spots.map(s => s.id);
+      currentSpotIdx = 0;
+      openMapModal();
+      updateSwipeBar(activeSpotIds[0]);
+      Object.keys(layerGroupsByDay).forEach(k => {
+        if (k === dayId) { if (!map.hasLayer(layerGroupsByDay[k])) layerGroupsByDay[k].addTo(map); }
+        else { if (map.hasLayer(layerGroupsByDay[k])) map.removeLayer(layerGroupsByDay[k]); }
+      });
+      const bounds = day.spots.map(s => [s.lat, s.lng]);
+      setTimeout(() => {
+        map.invalidateSize();
+        if (bounds.length === 1) map.flyTo(bounds[0], 15, { duration: 0.6 });
+        else map.flyToBounds(bounds, { padding: [50, 50], duration: 0.6 });
+      }, 100);
+    }
+
+    function openFullMapModal() {
+      activeSpotIds = Object.keys(markersBySpotId);
+      currentSpotIdx = 0;
+      openMapModal('📍 廈門五日行程總覽地圖');
+      updateSwipeBar(activeSpotIds[0]);
+      setTimeout(() => resetMapView(), 120);
+    }
+
+    function filterDay(dayId, btnEl) {
+      if (btnEl) {
+        document.querySelectorAll('.date-tab').forEach(b => b.classList.remove('active'));
+        btnEl.classList.add('active');
+      }
+      document.querySelectorAll('.day-section').forEach(sec => {
+        sec.style.display = (dayId === 'all' || sec.dataset.dayId === dayId) ? 'block' : 'none';
+      });
+      if (window.innerWidth <= 768 && dayId !== 'all') {
+        const header = document.getElementById('appHeader');
+        if (!header.classList.contains('collapsed')) toggleHeader();
+      }
+    }
+
+    function resetMapView() {
+      Object.keys(layerGroupsByDay).forEach(k => {
+        if (!map.hasLayer(layerGroupsByDay[k])) layerGroupsByDay[k].addTo(map);
+      });
+      if (allBounds.length > 0) {
+        map.invalidateSize();
+        map.flyToBounds(allBounds, { padding: [40, 40], duration: 0.6 });
+      }
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
