@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>街友本色 I - 煙屁股大作戰 | True Hobo I: Butt Brawl</title>
+    <meta name="description"
+        content="街友本色 I - 煙屁股大作戰（True Hobo I: Butt Brawl）：在台灣霓虹暗巷裡挑一根菸屁股，壓住猛吸、適時放開控溫，60 秒內抽出最高分的黑色幽默網頁小遊戲。">
+    <!-- 分享預覽（FB、Threads、LINE 等貼上網址時顯示的標題、說明、圖片；網址要用完整網址）
+         改了 og-image.jpg 之後，FB 要到「分享偵錯工具」重新擷取才會更新預覽圖 -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="街友本色 I - 煙屁股大作戰">
+    <meta property="og:url" content="https://han45678.github.io/HanWorks/trueHobo/1/">
+    <meta property="og:title" content="街友本色 I - 煙屁股大作戰 | True Hobo I: Butt Brawl">
+    <meta property="og:description" content="在台灣霓虹暗巷裡挑一根菸屁股，壓住猛吸、適時放開控溫，60 秒內抽出最高分！你能抽贏我嗎？">
+    <meta property="og:image" content="https://han45678.github.io/HanWorks/trueHobo/1/images/og-image.jpg">
+    <!-- og-image.jpg：直式 1080x1350（4:5），下方有遊戲網址的 QR code；結算畫面下載的戰績圖也用這張當底圖（js/share.js） -->
+    <meta property="og:image:width" content="1080">
+    <meta property="og:image:height" content="1350">
+    <meta property="og:locale" content="zh_TW">
+    <meta name="twitter:card" content="summary_large_image">
+    <!-- AdSense 網站驗證（meta 標記 + 程式碼片段都放在 head，Google 只認 head 裡的） -->
+    <meta name="google-adsense-account" content="ca-pub-9815906908978353">
+    <!-- 廣告腳本被擋（例如裝了擋廣告外掛）時記下來，等廣告列建好再收起 -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9815906908978353"
+        crossorigin="anonymous" onerror="window.adScriptBlocked = true; if (window.hideAdBar) hideAdBar();"></script>
+    <!-- 分頁小圖示：撿來的菸屁股（濾嘴 + 一小截皺菸紙 + 燒焦的頭）；內嵌，免得瀏覽器去抓不存在的 favicon.ico -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><g transform='rotate(-32 50 50)' stroke='%23000' stroke-width='5' stroke-linejoin='round'><rect x='8' y='36' width='46' height='28' rx='3' fill='%23d9893a'/><path d='M54 37 H78 L84 43 L79 50 L85 57 L78 63 H54 Z' fill='%23ece6d8'/><path d='M76 37 L84 43 L79 50 L85 57 L78 63 H71 L73 50 Z' fill='%23332b26' stroke='none'/></g><g transform='rotate(-32 50 50)' fill='%23f6c27a'><circle cx='20' cy='45' r='3'/><circle cx='32' cy='55' r='3'/><circle cx='44' cy='45' r='3'/></g></svg>">
+    <!-- PWA：可以「加到主畫面」安裝成 App（App 名稱、圖示、全螢幕直向見 manifest）；一定要連網才能玩，沒網路時顯示無法連線（見 sw.js）
+         manifest 和 icons/ 的圖示不加 ?v=版本號：它們由瀏覽器自己定期檢查更新，不是遊戲載入時讀的檔案 -->
+    <link rel="manifest" href="./manifest.webmanifest">
+    <meta name="theme-color" content="#080a0f">
+    <!-- iPhone / iPad 加到主畫面：iOS 用這個圖示和名稱，開啟後不顯示 Safari 網址列 -->
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="街友本色 I">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <!-- Phaser 3 -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <!-- Google Fonts：中文 Noto Serif TC、英文 Noto Serif（全站統一） -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Serif:wght@400;700;900&display=swap"
+        rel="stylesheet">
+    <!-- ===== 內部版本號 =====
+         每次更新遊戲（JS、CSS、圖片、音檔、影片有任何變動）就把 APP_VERSION 改成新的號碼。
+         所有檔案的網址都會帶上 ?v=版本號，號碼一變就是新網址，玩家的瀏覽器和 GitHub Pages 的 CDN 都會重新下載；
+         玩家拿到舊的 index.html 時，js/main.js 的 checkForNewVersion() 會發現並自動換成新版。
+         sw.js 也跟著這個號碼：號碼一變，裝好 App 的玩家下次開啟就會換新版的 sw.js。 -->
+    <script>
+        window.APP_VERSION = '1.0.18';
+
+        // 網址加上 ?v=版本號（雙擊開檔 file:// 時不加：本機檔案不會被快取，加了反而可能讀不到）
+        window.withVersion = function (url) {
+            if (location.protocol === 'file:') return url;
+            return url + (url.indexOf('?') < 0 ? '?' : '&') + 'v=' + encodeURIComponent(window.APP_VERSION);
+        };
+
+        // 依序載入帶版本號的 CSS / JS（用 document.write 才會跟寫死的 <link>、<script> 一樣同步、照順序載入）
+        window.loadVersioned = function (urls) {
+            urls.forEach(function (url) {
+                var src = window.withVersion(url);
+                document.write(/\.css$/.test(url)
+                    ? '<link rel="stylesheet" href="' + src + '">'
+                    : '<script src="' + src + '"><\/script>');
+            });
+        };
+
+        loadVersioned(['./css/style.css']);
+    </script>
+</head>
+
+<body>
+
+    <div id="game-wrapper">
+        <!-- Phaser Game Canvas Mount -->
+        <div id="phaser-container"></div>
+    </div>
+
+    <!-- 無法連線：玩到一半斷線時蓋在遊戲上（js/main.js 的 setupOfflineGuard()）；開啟時就沒網路的無法連線頁在 sw.js -->
+    <div id="offline-overlay" class="offline" hidden>
+        <h1>無法連線</h1>
+        <p>街友本色 I 需要網路才能玩</p>
+        <small>請確認網路連線，連上後會自動重新載入</small>
+        <button type="button" class="comic-btn" onclick="location.reload()">重新連線</button>
+    </div>
+
+    <!-- 詢問要不要安裝成 App（什麼時候跳出由 js/install.js 決定；文字直接改這裡）
+           data-for="prompt"         ：Chrome / Edge / Android，按「安裝」叫出瀏覽器的安裝視窗
+           data-for="manual-desktop" ：電腦版 Chrome 還不准叫安裝視窗時（剛打開未滿 30 秒），教玩家用網址列的安裝圖示
+           data-for="manual-android" ：Android 同上，教玩家用「⋮」選單
+           data-for="ios"            ：iPhone / iPad，沒有安裝視窗，教玩家「分享 → 加入主畫面」
+           data-for="installed-…"    ：裝好之後還停在瀏覽器裡，告訴玩家去哪裡開
+                                       （網頁沒辦法切換到 App：Android 的 Chrome 會把同一個網站的網址留在瀏覽器裡開） -->
+    <div id="install-dialog" class="install" hidden>
+        <div class="install-card" role="dialog" aria-modal="true" aria-labelledby="install-title install-done-title">
+            <img class="install-icon" alt="" width="76" height="76">
+            <h2 id="install-title" class="comic-stroke" data-for="prompt manual-desktop manual-android ios">把街友本色 I 裝成 App？</h2>
+            <h2 id="install-done-title" class="comic-stroke" data-for="installed-desktop installed-android">安裝好了！</h2>
+            <p data-for="installed-android"><span>到主畫面點「街友本色 I」，</span><span>就會用全螢幕 App 開啟</span></p>
+            <p data-for="installed-desktop"><span>到桌面、Dock 或應用程式清單</span><span>點「街友本色 I」開啟</span></p>
+            <!-- 每個 <span> 是一個詞組，換行只會換在詞組之間 -->
+            <p data-for="prompt"><span>裝到桌面或主畫面，</span><span>下次一點就開抽，</span><span>還能全螢幕玩</span></p>
+            <p data-for="manual-desktop">
+                <span>點網址列右邊的安裝圖示<svg class="install-glyph" viewBox="0 0 24 24" width="18" height="18" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true"><path d="M11 4H4v12h16v-4M9 20h6M12 16v4M17 3v7M14 7l3 3 3-3"/></svg>，</span><span>或右上角<svg class="install-glyph" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"
+                    aria-label="⋮"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg>選單裡的「安裝」</span>
+            </p>
+            <p data-for="manual-android">
+                <span>點右上角的<svg class="install-glyph" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"
+                    aria-label="⋮"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg>選單，</span><span>選「加到主畫面」或「安裝應用程式」</span>
+            </p>
+            <p data-for="ios">
+                <span>先點「分享」<svg class="install-glyph" viewBox="0 0 24 24" width="18" height="18" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M7 10H5v11h14V10h-2"/></svg>，</span><span>再選「加入主畫面」</span>
+                <small><span>新版 iOS 的 Safari</span> <span>要先點「⋯」才看得到「分享」</span></small>
+            </p>
+            <div class="install-actions">
+                <button type="button" class="comic-btn secondary" data-action="later" data-for="prompt">以後再說</button>
+                <button type="button" class="comic-btn" data-action="install" data-for="prompt">安裝</button>
+                <button type="button" class="comic-btn" data-action="later" data-for="ios manual-desktop manual-android installed-desktop installed-android">知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲程式（依相依順序載入：音效 → 美術 → 資料 → 共用特效 → 各場景 → 啟動），網址自動帶版本號 -->
+    <script>
+        loadVersioned([
+            './js/audio.js',
+            './js/comic-art.js',
+            './js/data.js',
+            './js/fx.js',
+            './js/share.js',
+            './js/scenes/boot-scene.js',
+            './js/scenes/cover-scene.js',
+            './js/scenes/story-scene.js',
+            './js/scenes/select-scene.js',
+            './js/scenes/play-scene.js',
+            './js/scenes/result-scene.js',
+            './js/main.js'
+        ]);
+    </script>
+
+    <!-- game：底部橫幅廣告。放在遊戲正下方並讓出空間（兩側夠寬時改放左下角），都與遊戲保持 150px 以上距離；
+         螢幕寬度放不下（例如手機放不下 728px）就不放；沒有廣告可放或被擋時自動收起
+         廣告尺寸在這裡設定（要跟 AdSense 後台廣告單元的尺寸一致）：
+           data-slot / data-size               ：一般螢幕用的廣告單元編號與尺寸（寬x高）
+           data-mobile-slot / data-mobile-size ：手機用（螢幕放不下上面那個時改用）；slot 留空 = 手機不放廣告 -->
+    <div id="ad-bar"
+        data-slot="6817299480" data-size="728x90"
+        data-mobile-slot="" data-mobile-size="320x50"></div>
+    <!-- 廣告程式（依上面 #ad-bar 的設定放廣告） -->
+    <script>
+        loadVersioned(['./js/ads.js']);
+    </script>
+    <!-- 主動詢問要不要安裝成 App（依上面 #install-dialog 顯示） -->
+    <script>
+        loadVersioned(['./js/install.js']);
+    </script>
+</body>
+
+</html>
